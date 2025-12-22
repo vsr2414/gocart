@@ -4,15 +4,30 @@ import StoreInfo from "@/components/admin/StoreInfo"
 import Loading from "@/components/Loading"
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
+import { useUser, useAuth } from "@clerk/nextjs"
+import axios from "axios"
 
 export default function AdminApprove() {
 
+    const {user} = useUser()
+    const {getToken} = useAuth()
     const [stores, setStores] = useState([])
     const [loading, setLoading] = useState(true)
 
 
     const fetchStores = async () => {
-        setStores(storesDummyData)
+        try {
+            const token = await getToken()
+            const {data} = await axios.get('/api/admin/approve-store', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            setStores(data.stores)
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error.message)
+
+        }
         setLoading(false)
     }
 
@@ -23,7 +38,9 @@ export default function AdminApprove() {
     }
 
     useEffect(() => {
+        if (user) {
             fetchStores()
+        }
     }, [])
 
     return !loading ? (
