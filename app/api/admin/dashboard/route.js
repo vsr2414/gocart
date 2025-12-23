@@ -1,7 +1,7 @@
 import {getAuth} from "@clerk/nextjs/server"
 import { NextResponse } from "next/server";
 import authAdmin from "@/middlewares/authAdmin";
-import { prisma } from "@/lib/prisma";
+import  prisma  from "@/lib/prisma";
 import { all } from "axios";
 
 //Get Dashboard Data for Admin (total orders, total stores, total revenue, total products)
