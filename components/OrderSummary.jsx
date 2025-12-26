@@ -4,9 +4,15 @@ import AddressModal from './AddressModal';
 import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import {Protect} from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
+import axios from 'axios';
+
 
 const OrderSummary = ({ totalPrice, items }) => {
 
+    const {user} = useUser()
+    const {getToken} = useAuth()
     const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
 
     const router = useRouter();
@@ -21,7 +27,21 @@ const OrderSummary = ({ totalPrice, items }) => {
 
     const handleCouponCode = async (event) => {
         event.preventDefault();
-        
+        try {
+           if (!user) {
+            return toast.error('Please login to apply coupon')
+           }
+              const token = await getToken();
+              const {data} = await axios.post('/api/coupon', {code: couponCodeInput}, {
+                headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+                setCoupon(data.coupon)
+                toast.success('coupon Applied')
+    }       catch (error) {
+        toast.error(error?.response?.data?.message || error.message)
+    }
     }
 
     const handlePlaceOrder = async (e) => {
@@ -78,7 +98,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                     </div>
                     <div className='flex flex-col gap-1 font-medium text-right'>
                         <p>{currency}{totalPrice.toLocaleString()}</p>
-                        <p>Free</p>
+                        <p><Protect plan={'plus'} fallback={`${currency}5`}>Free</Protect></p>
                         {coupon && <p>{`-${currency}${(coupon.discount / 100 * totalPrice).toFixed(2)}`}</p>}
                     </div>
                 </div>
@@ -99,7 +119,12 @@ const OrderSummary = ({ totalPrice, items }) => {
             </div>
             <div className='flex justify-between py-4'>
                 <p>Total:</p>
-                <p className='font-medium text-right'>{currency}{coupon ? (totalPrice - (coupon.discount / 100 * totalPrice)).toFixed(2) : totalPrice.toLocaleString()}</p>
+                <p className='font-medium text-right'>
+                    <Protect plan={'plus'} fallback={`${currency}${coupon ? (totalPrice + 5 - (coupon.discount / 100 * totalPrice)).toFixed(2) : (totalPrice + 5).toLocaleString()}`}>
+                    ${currency}{coupon ? (totalPrice - (coupon.discount / 100 * totalPrice)).toFixed(2) : (totalPrice ).toLocaleString()}
+                
+                    </Protect>
+                    </p>
             </div>
             <button onClick={e => toast.promise(handlePlaceOrder(e), { loading: 'placing Order...' })} className='w-full bg-slate-700 text-white py-2.5 rounded hover:bg-slate-900 active:scale-95 transition-all'>Place Order</button>
 
