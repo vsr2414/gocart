@@ -2,6 +2,8 @@ import { add, parse } from "date-fns";
 import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { PaymentMethod } from "@prisma/client";
+
 
 export async function POST(request) {
     try {
@@ -114,5 +116,27 @@ export async function POST(request) {
         } catch (error) {
                 console.error(error);
                 return NextResponse.json({ error: error.code || error.message }, { status: 400 })
+        }
+    }
+
+    //Get all orders for the authenticated user
+    export async function GET(request) {
+        try {
+            const { userId } = getAuth(request)
+            const orders = await prisma.order.findMany({
+                where: { userId, OR: [{paymentMethod: PaymentMethod.COD}, {AND:[{paymentMethod: PaymentMethod.STRIPE}, {isPaid: true}]}]},
+                include: {
+                    orderItems: {
+                        include: {
+                            product: true}},
+                            address: true
+                        },
+                        orderBy: { createdAt: 'desc' }
+                    })
+                    return NextResponse.json({ orders })
+                
+        } catch (error) {
+            console.error(error);
+            return NextResponse.json({ error: error.code || error.message }, { status: 400 })
         }
     }

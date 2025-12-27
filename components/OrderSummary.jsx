@@ -1,7 +1,7 @@
 import { PlusIcon, SquarePenIcon, XIcon } from 'lucide-react';
 import React, { useState } from 'react'
 import AddressModal from './AddressModal';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import {Protect} from '@clerk/nextjs';
@@ -9,10 +9,12 @@ import { useUser, useAuth } from '@clerk/nextjs';
 import axios from 'axios';
 
 
+
 const OrderSummary = ({ totalPrice, items }) => {
 
     const {user} = useUser()
     const {getToken} = useAuth()
+    const dispatch = useDispatch();
     const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
 
     const router = useRouter();
@@ -46,8 +48,42 @@ const OrderSummary = ({ totalPrice, items }) => {
 
     const handlePlaceOrder = async (e) => {
         e.preventDefault();
+        try {
+            if (!user) {
+                return toast('Please login to place order')
+            }
+            if (!selectedAddress) {
+                return toast('Please select an address to place order')
+            }
+            const token = await getToken();
 
-        router.push('/orders')
+            const orderData = {
+                addressId: selectedAddress.id,
+                paymentMethod,
+                items
+            }
+
+            if (coupon) {
+                orderData.couponCode = coupon.code
+            }
+            //create order
+            const {data} = await axios.post('/api/orders', orderData, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            if(paymentMethod === 'STRIPE'){
+                window.location.href = data.session.url;
+            } else {
+                toast.success(data.message)
+                router.push('/orders')
+                dispatch(fetchCart({getToken}))
+            }
+
+        } catch (error) {
+            toast.error(error?.response?.data?.message || error.message)
+        }
     }
 
     return (
