@@ -2,6 +2,7 @@ import Stripe from "stripe"
 import { NextResponse } from "next/server"
 import  prisma  from "@/lib/prisma"
 
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 export async function POST(request) {
@@ -17,11 +18,37 @@ export async function POST(request) {
             })
 
             const {orderIds, userId, appId} = session.data[0].metadata
-        }
 
-        if(appId !== 'gocart'){
-            return NextResponse.json({received: true, message: "Invalid App id"})
+            if(appId !== 'gocart'){
+            return NextResponse.json({received: true, message: "Invalid app id"})
     }   
+
+    const orderIdsArray = orderIds.split(',')
+
+    if (!isPaid) {
+        //mark orders as paid
+        await Promise.all(orderIdsArray.map(async (orderId) => {
+            await prisma.order.update({
+                where: {id: orderId},
+                data: {isPaid: true}
+            })
+        }))
+        //delete cart from user
+        await prisma.user.update({
+            where: {id: userId},
+            data: {cart: {}}
+        })
+    } else {
+        //delete order from database
+        await Promise.all(orderIdsArray.map(async (orderId) => {
+            await prisma.order.delete({
+                where: {id: orderId}
+            })
+        }))
+    }
+    }
+
+        
 
     switch (event.type) {
         case 'payment_intent.succeeded': {
