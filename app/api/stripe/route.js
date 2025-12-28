@@ -20,7 +20,7 @@ export async function POST(request) {
         }
 
         if(appId !== 'gocart'){
-            return NextResponse.json({})
+            return NextResponse.json({received: true, message: "Invalid App id"})
     }   
 
     switch (event.type) {
