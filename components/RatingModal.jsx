@@ -6,7 +6,7 @@ import { XIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@clerk/nextjs';
 import { useDispatch } from 'react-redux';
-import { addRating } from '@/store/slices/ratingSlice';
+import { addRating } from '@lib/features/rating/ratingSlice';
 import axios from 'axios';
 
 const RatingModal = ({ ratingModal, setRatingModal }) => {
