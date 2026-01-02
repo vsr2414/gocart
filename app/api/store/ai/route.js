@@ -2,6 +2,7 @@ import {NextResponse} from "next/server"
 import {getAuth} from "@clerk/nextjs/server"
 import prisma from "@/lib/prisma"
 import authSeller from "@/middlewares/authSeller"
+import { openai } from "@/configs/openai";
 
 async function main(base64Image, mimeType) {
     const messages = [
@@ -35,6 +36,25 @@ async function main(base64Image, mimeType) {
         }
 
     ];
+
+     const response =await openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL,
+        messages,
+    });
+
+    const raw = response.choices[0].message.content
+
+    //remove ```json or``` wrappers if present
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+
+    let parsed;
+    try {
+        parsed = JSON.parse(cleaned);
+    } catch (error) {
+        throw new Error("AI did not return valid JSON");
+    }
+    return parsed;
+
 }
 
 export async function POST(request) {
