@@ -7,7 +7,6 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@clerk/nextjs';
 import { useDispatch } from 'react-redux';
 import { addRating } from '@/store/slices/ratingSlice';
-import { headers } from 'next/headers';
 import axios from 'axios';
 
 const RatingModal = ({ ratingModal, setRatingModal }) => {
